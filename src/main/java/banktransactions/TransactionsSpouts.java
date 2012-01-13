@@ -17,7 +17,7 @@ public class TransactionsSpouts implements IRichSpout{
 
 	private static final Integer MAX_FAILS = 2;
 	Map<Integer,String> messages;
-	Map<Integer,Integer> failCounterMessages;
+	Map<Integer,Integer> transactionFailureCount;
 	Map<Integer,String> toSend;
 	private SpoutOutputCollector collector;  
 	
@@ -37,18 +37,18 @@ public class TransactionsSpouts implements IRichSpout{
 	}
 
 	public void fail(Object msgId) {
-		if(!failCounterMessages.containsKey(msgId))
+		if(!transactionFailureCount.containsKey(msgId))
 			throw new RuntimeException("Error, transaction id not found ["+msgId+"]");
 		Integer transactionId = (Integer) msgId;
 		
 		//Get the transactions fail
-		Integer fails = failCounterMessages.get(transactionId) + 1;
-		if(fails >= MAX_FAILS){
+		Integer failures = transactionFailureCount.get(transactionId) + 1;
+		if(failures >= MAX_FAILS){
 			//If exceeds the max fails will go down the topology
-			throw new RuntimeException("Error, transaction id ["+transactionId+"] has had many errors ["+fails+"]");
+			throw new RuntimeException("Error, transaction id ["+transactionId+"] has had many errors ["+failures+"]");
 		}
 		//If not exceeds the max fails we save the new fails quantity and re-send the message 
-		failCounterMessages.put(transactionId, fails);
+		transactionFailureCount.put(transactionId, failures);
 		toSend.put(transactionId,messages.get(transactionId));
 		LOG.info("Re-sending message ["+msgId+"]");
 	}
@@ -76,10 +76,10 @@ public class TransactionsSpouts implements IRichSpout{
 		Random random = new Random();
 		messages = new HashMap<Integer, String>();
 		toSend = new HashMap<Integer, String>();
-		failCounterMessages = new HashMap<Integer, Integer>();
+		transactionFailureCount = new HashMap<Integer, Integer>();
 		for(int i = 0; i< 100; i++){
 			messages.put(i, "transaction_"+random.nextInt());
-			failCounterMessages.put(i, 0);
+			transactionFailureCount.put(i, 0);
 		}
 		toSend.putAll(messages);
 		this.collector = collector;

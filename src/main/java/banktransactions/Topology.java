@@ -4,6 +4,13 @@ import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.topology.TopologyBuilder;
 
+/**
+ * To run this topology you should execute this main as: 
+ * java -cp theGeneratedJar.jar banktransactions.Topology
+ *
+ * @author StormBook
+ *
+ */
 public class Topology {
 
 	public static void main(String[] args) throws InterruptedException {

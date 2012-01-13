@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import javax.management.RuntimeErrorException;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.auth.AuthSchemeRegistry;
@@ -103,17 +105,23 @@ public class ApiStreamingSpout implements IRichSpout{
 	@Override
 	public void open(Map conf, TopologyContext context,
 			SpoutOutputCollector collector) {
-		int spouts =context.getRawTopology().get_spouts_size();
+		int spoutsSize = context.getComponentTasks(context.getThisComponentId()).size();
 		int myIdx = context.getThisTaskIndex();
 		String[] tracks = ((String) conf.get("track")).split(",");
 		StringBuffer tracksBuffer = new StringBuffer();
 		for(int i=0; i< tracks.length;i++){
-			if( i % spouts == myIdx){
+			if( i % spoutsSize == myIdx){
 				tracksBuffer.append(",");
 				tracksBuffer.append(tracks[i]);
 			}
 		}
-		this.track = tracksBuffer.substring(1).toString();
+		
+		if(tracksBuffer.length() == 0)
+			throw new RuntimeException("No track found for spout" +
+					" [spoutsSize:"+spoutsSize+", tracks:"+tracks.length+"] the amount" +
+					" of tracks must be more then the spout paralellism");
+		
+		this.track =tracksBuffer.substring(1).toString();
 		
 		user = (String) conf.get("user");
 		password = (String) conf.get("password");
